@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hydrantenkaart (Publiek)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+html, body, #map { height: 100%; margin: 0; }
+.legend { background:#fff; padding:8px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.15); font: 14px/1.2 system-ui, sans-serif; }
+.legend div { margin: 4px 0; display:flex; align-items:center; gap:6px; }
+.dot { width:12px; height:12px; border-radius:50%; border:1px solid #333; display:inline-block; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+const PROJECT_URL = "https://yusqcjxkwhxvxubzzhog.supabase.co"; // ← vervang
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1c3Fjanhrd2h4dnh1Ynp6aG9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzAxNTUsImV4cCI6MjA3MzcwNjE1NX0.wDHkD8MLvDVlmzgF246ArKDyuJPwp6ripOrWWNDar9E"; // ← vervang
+
+
+// Kaart opstarten (Brussel als start)
+const map = L.map('map').setView([50.85, 4.35], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+attribution: '&copy; OpenStreetMap-bijdragers'
+}).addTo(map);
+
+
+// Status → kleur
+function statusColor(s){
+switch((s||'').toLowerCase()){
+case 'bruikbaar': return '#2ecc71';
+case 'niet bruikbaar': return '#e74c3c';
+case 'onvindbaar': return '#9b59b6';
+case 'onbekend': return '#95a5a6';
+default: return '#3498db';
+}
+}
+
+
+const markers = L.layerGroup().addTo(map);
+
+
+async function loadHydrants(){
+const url = `${PROJECT_URL}/rest/v1/hydrants_public?select=*`;
+const res = await fetch(url, { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } });
+if(!res.ok){ alert('Kon data niet laden'); return; }
+const rows = await res.json();
+markers.clearLayers();
+rows.forEach(r => {
+if(typeof r.Lat !== 'number' || typeof r.Lon !== 'number') return;
+const m = L.circleMarker([r.Lat, r.Lon], { radius: 7, weight:1, color:'#333', fillColor: statusColor(r.Status), fillOpacity: 0.9 });
+m.bindPopup(``
++ `<b>${r.Hydrantnr}</b><br>`
++ `${r.Straat || ''}${r.Gemeente ? ', '+r.Gemeente : ''}<br>`
++ (r.Plaats ? `${r.Plaats}<br>` : '')
++ `Type: ${r.Typehydrant || '-'}${r.typeAanduiding ? ' – '+r.typeAanduiding : ''}<br>`
++ (r.diameter ? `Diameter: ${r.diameter} mm<br>` : '')
++ `Status: ${r.Status}`
+);
+markers.addLayer(m);
+});
+if(rows.length){
+const latlngs = rows.filter(r=>typeof r.Lat==='number'&&typeof r.Lon==='number').map(r=>[r.Lat,r.Lon]);
+if(latlngs.length){ map.fitBounds(latlngs, { padding:[20,20] }); }
+}
+}
+
+
+// Legende
+const legend = L.control({position: 'topright'});
+legend.onAdd = function(){
+const div = L.DomUtil.create('div', 'legend');
+div.innerHTML = `
+<div><span class="dot" style="background:#2ecc71"></span>Bruikbaar</div>
+<div><span class="dot" style="background:#e74c3c"></span>Niet bruikbaar</div>
+<div><span class="dot" style="background:#9b59b6"></span>Onvindbaar</div>
+<div><span class="dot" style="background:#95a5a6"></span>Onbekend</div>
+`;
+return div;
+};
+legend.addTo(map);
+
+
+loadHydrants();
+</script>
+</body>
+</html>
