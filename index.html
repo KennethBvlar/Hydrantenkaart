@@ -1,132 +1,138 @@
 <!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hydrantenkaart (Publiek)</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <style>
-    html, body, #map { height: 100%; margin: 0; }
-    .ui { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; gap: 8px; align-items: center; }
-    .search {
-      background:#fff; padding:8px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.15);
-      font: 14px/1.2 system-ui, sans-serif; width: 280px; border: 1px solid #ddd;
-    }
-    .legend { position: absolute; top: 10px; right: 10px; z-index: 1000;
-      background:#fff; padding:8px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.15); font: 14px/1.2 system-ui, sans-serif; }
-    .legend div { margin: 4px 0; display:flex; align-items:center; gap:6px; }
-    .dot { width:12px; height:12px; border-radius:50%; border:1px solid #333; display:inline-block; }
-    .pill { background:#fff; padding:6px 10px; border-radius:999px; border:1px solid #ddd; font: 13px system-ui, sans-serif; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hydrantenkaart (Publiek)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+html, body, #map { height: 100%; margin: 0; }
+.ui { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.search { background:#fff; padding:8px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.15); font: 14px/1.2 system-ui, sans-serif; width: 260px; border: 1px solid #ddd; }
+.select { background:#fff; padding:8px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.15); font: 14px/1.2 system-ui, sans-serif; border: 1px solid #ddd; }
+.legend { position: absolute; top: 10px; right: 10px; z-index: 1000; background:#fff; padding:8px 10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.15); font: 14px/1.2 system-ui, sans-serif; }
+.legend div { margin: 4px 0; display:flex; align-items:center; gap:6px; }
+.dot { width:12px; height:12px; border-radius:50%; border:1px solid #333; display:inline-block; }
+.pill { background:#fff; padding:6px 10px; border-radius:999px; border:1px solid #ddd; font: 13px system-ui, sans-serif; }
+.btn { background:#fff; padding:8px 12px; border-radius:8px; border:1px solid #ddd; box-shadow:0 2px 8px rgba(0,0,0,.10); cursor:pointer; font: 14px system-ui, sans-serif; }
+</style>
 </head>
 <body>
-  <div id="map"></div>
+<div id="map"></div>
 
-  <!-- UI -->
-  <div class="ui">
-    <input id="q" class="search" placeholder="Zoeken op straat, gemeente of hydrantnr…" />
-    <span id="count" class="pill">0 resultaten</span>
-  </div>
-  <div class="legend">
-    <div><span class="dot" style="background:#2ecc71"></span>Bruikbaar</div>
-    <div><span class="dot" style="background:#e74c3c"></span>Niet bruikbaar</div>
-    <div><span class="dot" style="background:#9b59b6"></span>Onvindbaar</div>
-    <div><span class="dot" style="background:#95a5a6"></span>Onbekend</div>
-  </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script>
+<!-- UI -->
+<div class="ui">
+<input id="q" class="search" placeholder="Zoeken op straat, gemeente of hydrantnr…" />
+<select id="f_gemeente" class="select"></select>
+<select id="f_straat" class="select"></select>
+<select id="f_status" class="select"></select>
+<button id="reset" class="btn">Reset</button>
+<span id="count" class="pill">0 resultaten</span>
+</div>
+<div class="legend">
+<div><span class="dot" style="background:#2ecc71"></span>Bruikbaar</div>
+<div><span class="dot" style="background:#e74c3c"></span>Niet bruikbaar</div>
+<div><span class="dot" style="background:#9b59b6"></span>Onvindbaar</div>
+<div><span class="dot" style="background:#95a5a6"></span>Onbekend</div>
+</div>
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
 const PROJECT_URL = "https://yusqcjxkwhxvxubzzhog.supabase.co"; // ← vervang
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1c3Fjanhrd2h4dnh1Ynp6aG9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzAxNTUsImV4cCI6MjA3MzcwNjE1NX0.wDHkD8MLvDVlmzgF246ArKDyuJPwp6ripOrWWNDar9E"; // ← vervang
 
 
 // Kaart
-  const map = L.map('map').setView([50.85, 4.35], 11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap-bijdragers'
-  }).addTo(map);
+(r.plaats ? `${r.plaats}<br>` : '') +
+`Type: ${r.typehydrant || '-'}${r.typeaanduiding ? ' – '+r.typeaanduiding : ''}<br>` +
+(r.diameter ? `Diameter: ${r.diameter} mm<br>` : '') +
+`Status: ${r.status}`
+);
+markers.addLayer(m);
+});
+document.getElementById('count').textContent = `${rows.length} resultaten`;
+const latlngs = rows.filter(r=>isFinite(r.lat)&&isFinite(r.lon)).map(r=>[r.lat,r.lon]);
+if(latlngs.length){ map.fitBounds(latlngs, { padding:[20,20] }); }
+}
 
-  // Status → kleur
-  function statusColor(s){
-    const v = (s||'').toLowerCase();
-    if(v==='bruikbaar') return '#2ecc71';
-    if(v==='niet bruikbaar') return '#e74c3c';
-    if(v==='onvindbaar') return '#9b59b6';
-    if(v==='onbekend') return '#95a5a6';
-    return '#3498db';
-  }
 
-  const markers = L.layerGroup().addTo(map);
-  let allRows = [];   // originele set (genormaliseerd)
-  let showing = [];   // gefilterde set
+async function loadHydrants(){
+const url = `${PROJECT_URL}/rest/v1/hydrants_public?select=*`;
+const res = await fetch(url, { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } });
+if(!res.ok){ alert('Kon data niet laden'); return; }
+const raw = await res.json();
+allRows = raw.map(norm);
+showing = allRows.slice();
+buildFilters();
+render(showing);
+}
 
-  // Helpers
-  const toLowerKeys = obj => Object.fromEntries(Object.entries(obj).map(([k,v]) => [k.toLowerCase(), v]));
-  const norm = r => {
-    r = toLowerKeys(r);
-    // zorg dat we overal dezelfde key-namen gebruiken
-    return {
-      hydrantnr: r.hydrantnr ?? r.code ?? '',
-      straat: r.straat ?? '',
-      gemeente: r.gemeente ?? '',
-      plaats: r.plaats ?? '',
-      typehydrant: r.type ?? r.typehydrant ?? '',
-      typeaanduiding: r.type_aanduiding ?? r.typeaanduiding ?? '',
-      diameter: r.diameter ?? r.diameter_mm ?? null,
-      status: (r.status ?? '').toString().replace('_',' '),
-      lat: typeof r.lat==='number' ? r.lat : Number(r.lat),
-      lon: typeof r.lon==='number' ? r.lon : Number(r.lon),
-    };
-  };
 
-  function render(rows){
-    markers.clearLayers();
-    rows.forEach(r => {
-      if(!isFinite(r.lat) || !isFinite(r.lon)) return;
-      const m = L.circleMarker([r.lat, r.lon], { radius: 7, weight:1, color:'#333', fillColor: statusColor(r.status), fillOpacity: 0.9 });
-      m.bindPopup(
-        `<b>${r.hydrantnr}</b><br>` +
-        `${r.straat || ''}${r.gemeente ? ', '+r.gemeente : ''}<br>` +
-        (r.plaats ? `${r.plaats}<br>` : '') +
-        `Type: ${r.typehydrant || '-'}${r.typeaanduiding ? ' – '+r.typeaanduiding : ''}<br>` +
-        (r.diameter ? `Diameter: ${r.diameter} mm<br>` : '') +
-        `Status: ${r.status}`
-      );
-      markers.addLayer(m);
-    });
-    document.getElementById('count').textContent = `${rows.length} resultaten`;
-    const latlngs = rows.filter(r=>isFinite(r.lat)&&isFinite(r.lon)).map(r=>[r.lat,r.lon]);
-    if(latlngs.length){ map.fitBounds(latlngs, { padding:[20,20] }); }
-  }
+// === Filters ===
+const q = document.getElementById('q');
+const fGemeente = document.getElementById('f_gemeente');
+const fStraat = document.getElementById('f_straat');
+const fStatus = document.getElementById('f_status');
+const btnReset = document.getElementById('reset');
 
-  async function loadHydrants(){
-    const url = `${PROJECT_URL}/rest/v1/hydrants_public?select=*`;
-    const res = await fetch(url, { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } });
-    if(!res.ok){ alert('Kon data niet laden'); return; }
-    const raw = await res.json();
-    allRows = raw.map(norm);
-    showing = allRows.slice();
-    render(showing);
-  }
 
-  // Zoeken
-  const q = document.getElementById('q');
-  let timer = null;
-  q.addEventListener('input', () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      const term = q.value.trim().toLowerCase();
-      if(!term){ showing = allRows.slice(); render(showing); return; }
-      showing = allRows.filter(r =>
-        (r.hydrantnr||'').toLowerCase().includes(term) ||
-        (r.straat||'').toLowerCase().includes(term) ||
-        (r.gemeente||'').toLowerCase().includes(term)
-      );
-      render(showing);
-    }, 150); // debounce
-  });
+function unique(arr){ return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=>a.localeCompare(b)); }
 
-  loadHydrants();
-  </script>
+
+function buildFilters(){
+// Gemeenten
+const gemeenten = unique(allRows.map(r=>r.gemeente));
+fGemeente.innerHTML = `<option value="">Alle gemeenten</option>` + gemeenten.map(g=>`<option>${g}</option>`).join('');
+// Straten (afhankelijk van gekozen gemeente)
+rebuildStraten();
+// Status
+const statuses = unique(allRows.map(r=>r.status));
+fStatus.innerHTML = `<option value="">Alle status</option>` + statuses.map(s=>`<option>${s}</option>`).join('');
+}
+
+
+function rebuildStraten(){
+const gSel = fGemeente.value;
+const src = gSel ? allRows.filter(r=>r.gemeente===gSel) : allRows;
+const straten = unique(src.map(r=>r.straat));
+fStraat.innerHTML = `<option value="">Alle straten</option>` + straten.map(s=>`<option>${s}</option>`).join('');
+}
+
+
+function applyFilters(){
+const term = q.value.trim().toLowerCase();
+const gSel = fGemeente.value;
+const sSel = fStraat.value;
+const stSel= fStatus.value;
+
+
+showing = allRows.filter(r => {
+if(gSel && r.gemeente!==gSel) return false;
+if(sSel && r.straat!==sSel) return false;
+if(stSel && r.status!==stSel) return false;
+if(term){
+const hay = `${r.hydrantnr} ${r.straat} ${r.gemeente}`.toLowerCase();
+if(!hay.includes(term)) return false;
+}
+return true;
+});
+render(showing);
+}
+
+
+// Events
+let timer=null;
+q.addEventListener('input', ()=>{ clearTimeout(timer); timer=setTimeout(applyFilters, 150); });
+fGemeente.addEventListener('change', ()=>{ rebuildStraten(); applyFilters(); });
+fStraat.addEventListener('change', applyFilters);
+fStatus.addEventListener('change', applyFilters);
+btnReset.addEventListener('click', ()=>{ q.value=''; fGemeente.value=''; rebuildStraten(); fStatus.value=''; applyFilters(); });
+
+
+loadHydrants();
+</script>
 </body>
 </html>
+
