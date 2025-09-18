@@ -87,7 +87,7 @@ const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
   `<b>Gemeente:</b> ${r.gemeente || ''}<br>` +
   (r.plaats ? `<b>Plaats:</b> ${r.plaats}<br>` : '') +
   `<b>Type:</b> ${r.typehydrant || '-'}<br>` +
-   `<b>Aanduiding:</b> ${r.typeaanduiding ? ' – '+r.typeaanduiding : ''}<br>` +
+   `<b>Aanduiding:</b> ${r.typeaanduiding ? ' '+r.typeaanduiding : ''}<br>` +
   (r.diameter ? `<b>Diameter:</b> ${r.diameter} mm<br>` : '') +
   `<b>Status:</b> ${r.status}`
 );
@@ -169,5 +169,6 @@ const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
   </script>
 </body>
 </html>
+
 
 
